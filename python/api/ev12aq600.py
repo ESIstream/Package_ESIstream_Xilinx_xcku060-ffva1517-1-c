@@ -395,34 +395,111 @@ class ev12aq600:
     
     ## REG 12
     """ Not yet implemented """
-    
-    ## REG 15
-    def hw_adc_power_enable(self):
-        reg_addr = 15
-        reg_data_bit = 0
-        self.set_bit(reg_addr, reg_data_bit)
+    ## REG 14
+    def ref_sel_ext(self, logic):
+        """
+        ------------------------------------------------------------------------------------
+        -- ref clk source switch:
+        ------------------------------------------------------------------------------------
+        -- | ref_sel_ext | ref clk source |
+        -- | 1           | external       |
+        -- | 0           | internal       | DEFAULT
+        """
+        reg_addr = 14
+        reg_data_bit = 6
+        if (logic == 1):
+            self.set_bit(reg_addr, reg_data_bit)
+        else: 
+            self.unset_bit(reg_addr, reg_data_bit)
+            
+    def ref_sel(self, logic):
+        """
+        ------------------------------------------------------------------------------------
+        -- external ref clk switch:
+        ------------------------------------------------------------------------------------
+        -- |ref_sel     | ref clk source               |
+        -- | 1          | fpga_ref_clk                 |
+        -- | 0          | external ref clk SMA EXT REF | DEFAULT
+        """
+        reg_addr = 14
+        reg_data_bit = 5
+        if (logic == 1):
+            self.set_bit(reg_addr, reg_data_bit)
+        else: 
+            self.unset_bit(reg_addr, reg_data_bit)
 
-    def hw_adc_power_disable(self):
-        reg_addr = 15
-        reg_data_bit = 0
-        self.unset_bit(reg_addr, reg_data_bit)
-    
-    def hw_pll_enable(self):
-        reg_addr = 15
-        reg_data_bit = 1
-        self.set_bit(reg_addr, reg_data_bit)
-
-    def hw_pll_disable(self):
-        reg_addr = 15
-        reg_data_bit = 1
-        self.unset_bit(reg_addr, reg_data_bit)
-
-    def hw_select_sync_fpga(self):
-        reg_addr = 15
+    def clk_sel(self, logic):
+        """
+        ------------------------------------------------------------------------------------
+        -- EV12AQ60x CLK source switch:
+        ------------------------------------------------------------------------------------
+        -- |clk_sel      | ref clk source   |
+        -- | 1           | PLL LMX2592      | 
+        -- | 0           | external SMA     | DEFAULT 
+        """
+        reg_addr = 14
+        reg_data_bit = 4
+        if (logic == 1):
+            self.set_bit(reg_addr, reg_data_bit)
+        else: 
+            self.unset_bit(reg_addr, reg_data_bit)
+            
+    def synco_sel(self, logic):
+        """
+        ------------------------------------------------------------------------------------
+        -- SYNCO multiplexer CBTL01023 SEL-input:
+        ------------------------------------------------------------------------------------
+        -- |synco_sel | synco fpga source   |
+        -- | 1        | SYNCO external SMA  |
+        -- | 0        | SYNCO ADC           | DEFAULT
+        """
+        reg_addr = 14
+        reg_data_bit = 3
+        if (logic == 1):
+            self.set_bit(reg_addr, reg_data_bit)
+        else: 
+            self.unset_bit(reg_addr, reg_data_bit)
+            
+    def sync_sel(self, logic):
+        """
+        ------------------------------------------------------------------------------------
+        -- SYNC multiplexer CBTL01023 SEL-input:
+        ------------------------------------------------------------------------------------
+        -- |sync_sel    | sync adc source   |
+        -- | 1          | SYNC external SMA |
+        -- | 0          | SYNC FPGA         | DEFAULT
+        """
+        reg_addr = 14
         reg_data_bit = 2
-        self.unset_bit(reg_addr, reg_data_bit)
-        reg_data_bit = 12
-        self.set_bit(reg_addr, reg_data_bit)
+        if (logic == 1):
+            self.set_bit(reg_addr, reg_data_bit)
+        else: 
+            self.unset_bit(reg_addr, reg_data_bit)
+
+    def ref_clk_ratio(self, D0, D1):
+        """
+        ------------------------------------------------------------------------------------
+        -- Low jitter clock generation with integer N PLL:
+        ------------------------------------------------------------------------------------
+        -- | D0   | D1  | state  | ref clock frequency | PLL Division ratio |         |
+        -- |  0   |  0  |  OFF   | N.A.                | Power-down         | DEFAULT |
+        -- |  1   |  0  |  ON    | 100 MHz             | Divide by 1        |         |
+        -- |  0   |  1  |  ON    | 20 MHz              | Divide by 5        |         |
+        -- |  1   |  1  |  ON    | 10 MHz              | Divide by 10       |         |
+        """
+        reg_addr = 14
+        reg_data_bit = 1
+        if (D1 == 1):
+            self.set_bit(reg_addr, reg_data_bit)
+        else: 
+            self.unset_bit(reg_addr, reg_data_bit)
+            
+        reg_addr = 14
+        reg_data_bit = 0
+        if (D0 == 1):
+            self.set_bit(reg_addr, reg_data_bit)
+        else: 
+            self.unset_bit(reg_addr, reg_data_bit)
 
     ## REG 255
     def get_status(self):

@@ -674,12 +674,50 @@ begin
   fifo_out_rd_en       <= reg_10_os;
   sync_set_odelay      <= reg_12_os;
   --
+  ------------------------------------------------------------------------------------
+  -- ref clk source switch:
+  ------------------------------------------------------------------------------------
+  -- | ref_sel_ext | ref clk source |
+  -- | 1           | external       |
+  -- | 0           | internal       | DEFAULT
   ref_sel_ext          <= reg_14(6);
+  ------------------------------------------------------------------------------------
+  -- external ref clk switch:
+  ------------------------------------------------------------------------------------
+  -- |ref_sel     | ref clk source               |
+  -- | 1          | fpga_ref_clk                 |
+  -- | 0          | external ref clk SMA EXT REF | DEFAULT
   ref_sel              <= reg_14(5);
+  ------------------------------------------------------------------------------------
+  -- EV12AQ60x CLK source switch:
+  ------------------------------------------------------------------------------------
+  -- |clk_sel      | ref clk source   |
+  -- | 1           | PLL LMX2592      | 
+  -- | 0           | external SMA     | DEFAULT 
   clk_sel              <= reg_14(4);
+  ------------------------------------------------------------------------------------
+  -- SYNCO multiplexer CBTL01023 SEL-input:
+  ------------------------------------------------------------------------------------
+  -- |synco_sel | synco fpga source   |
+  -- | 1        | SYNCO external SMA  |
+  -- | 0        | SYNCO ADC           | DEFAULT
   synco_sel            <= reg_14(3);
+  ------------------------------------------------------------------------------------
+  -- SYNC multiplexer CBTL01023 SEL-input:
+  ------------------------------------------------------------------------------------
+  -- |sync_sel    | sync adc source   |
+  -- | 1          | SYNC external SMA |
+  -- | 0          | SYNC FPGA         | DEFAULT
   sync_sel             <= reg_14(2);
-  hmc1031_d1           <= reg_14(1);
+  ------------------------------------------------------------------------------------
+  -- Low jitter clock generation with integer N PLL:
+  ------------------------------------------------------------------------------------
+  -- | D0   | D1  | state  | ref clock frequency | PLL Division ratio |
+  -- |  0   |  0  |  OFF   | N.A.                | Power-down         | DEFAULT
+  -- |  1   |  0  |  ON    | 100 MHz             | Divide by 1        |
+  -- |  0   |  1  |  ON    | 20 MHz              | Divide by 5        |
+  -- |  1   |  1  |  ON    | 10 MHz              | Divide by 10       |
+  hmc1031_d1           <= reg_14(1);  
   hmc1031_d0           <= reg_14(0);
 --  
 end architecture rtl;
