@@ -41,7 +41,7 @@ class ev12aq600:
     ##################################################################################################################################### 
     ## Serial port functions
     #####################################################################################################################################      
-    def start_serial(self):
+    def start_serial(self, com_port):
         """
         Open serial port (UART):
         The FPGA design embeds a UART slave which uses the following configuration:
@@ -49,7 +49,7 @@ class ev12aq600:
         -	Data Bits: 8
         -	No parity
         """
-        self.ser=serial.Serial("COM16", 115200, timeout=1)
+        self.ser=serial.Serial(str(com_port), 115200, timeout=1)
         print("\r\n")
         print("--------------------------------------------------------")
         print("-- Serial communication opened... %s" %(self.ser.isOpen()))
@@ -136,6 +136,12 @@ class ev12aq600:
                     logging.debug("...%ds"%(timeCntr))
         return ack
 
+    def set_vector(self, reg_addr, reg_data, start_bit):
+        vector_slip = (reg_data << start_bit)
+        self.reg_array[reg_addr] = self.reg_array[reg_addr] | vector_slip
+        self.write_register(reg_addr, self.reg_array[reg_addr])
+        time.sleep(0.001)
+        
     def set_bit(self, reg_addr, reg_data_bit):
         """
         Parameters:
@@ -328,6 +334,17 @@ class ev12aq600:
         reg_addr = 5
         reg_data_bit = 0
         self.unset_bit(reg_addr, reg_data_bit)
+        
+    def sync_delay(self, delay):
+        """
+        Set delay between sync pulse sent to ESIstream VHDL IP and sync pulse sent to EV12AQ600 ADC.
+        ESIstream VHDL IP SYNC -----> delay -----> EV12AQ600 ADC sync pulse
+        delay range from 0 to 63
+        delay is an integer number of frame clock cycle.
+        """
+        reg_addr = 5
+        reg_start_bit = 8
+        self.set_vector(reg_addr, delay, reg_start_bit)
     
     ## REG 6
     def sync_pulse(self):
@@ -342,6 +359,7 @@ class ev12aq600:
         reg_data_bit = 0
         self.set_bit(reg_addr, reg_data_bit)
         self.unset_bit(reg_addr, reg_data_bit)
+        print(">> SYNC") 
 
     def set_sync_mode_to_manual(self):
         reg_addr = 6
@@ -584,6 +602,242 @@ class ev12aq600:
         self.spi_wr_fifo_in(reg_addr)
         # Load register data in spi master input fifo
         self.spi_wr_fifo_in(self.reg_aq600_array[reg_addr])
+        
+    def ev12aq600_otp_load(self):
+        reg_addr = 0x008001
+        reg_data_bit = 0
+        self.set_aq600_bit(reg_addr, reg_data_bit)
+        self.spi_wr_fifo_aq600(reg_addr)
+        ## Start spi write operation...
+        self.spi_start_pulse()
+
+    def ev12aq600_clk_mode_sel(self, mode):
+        reg_addr = 0x00800A
+        if mode == 0:
+            # 00: all clocks are interleaved (default)
+            reg_data_bit = 0
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 1
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        elif mode == 1:
+            # 01: clock A=B, clock C=D
+            reg_data_bit = 0
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 1
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        elif mode == 2:
+            # 10: clock A=C, clock B=D
+            reg_data_bit = 0
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 1
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+        else:
+            # elif mode == 3:
+            # 11: clock A=B=C=D , all clocks are identical
+            reg_data_bit = 0
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 1
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+
+        self.spi_wr_fifo_aq600(reg_addr)
+        
+        ## Start spi write operation...
+        self.spi_start_pulse()
+
+    def ev12aq600_cal_set_sel(self, calset):
+        reg_addr = 0x008009
+        if calset == 0:
+            # CalSet0 selected
+            reg_data_bit = 1
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 2
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        elif calset == 1:
+            # CalSet1 selected
+            reg_data_bit = 1
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 2
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        elif calset == 2:
+            # CalSet2 selected
+            reg_data_bit = 1
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 2
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+        else:
+            # CalSet3 selected
+            reg_data_bit = 1
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 2
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+
+        self.spi_wr_fifo_aq600(reg_addr)
+        
+        ## Start spi write operation...
+        self.spi_start_pulse()
+        
+    def ev12aq600_clk_mode_sel(self, mode):
+        reg_addr = 0x00800A
+        if mode == 0:
+            # 00: all clocks are interleaved (default)
+            reg_data_bit = 0
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 1
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        elif mode == 1:
+            # 01: clock A=B, clock C=D
+            reg_data_bit = 0
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 1
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        elif mode == 2:
+            # 10: clock A=C, clock B=D
+            reg_data_bit = 0
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 1
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+        else:
+            # elif mode == 3:
+            # 11: clock A=B=C=D , all clocks are identical
+            reg_data_bit = 0
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 1
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+
+        self.spi_wr_fifo_aq600(reg_addr)
+        
+        ## Start spi write operation...
+        self.spi_start_pulse()
+
+    def ev12aq600_cps_ctrl(self, mode):
+        reg_addr = 0x00800B
+        if mode == 0:
+            # 1-channel mode
+            # 000 : input 0 to core A & B & C & D
+            reg_data_bit = 0
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 1
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 2
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        elif mode == 1: 
+            # 1-channel mode
+            # 001 : input 3 to core A & B & C & D
+            reg_data_bit = 0
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 1
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 2
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        elif mode == 2:
+            # 2-channel mode
+            # 010 : input 0 to core A & B
+            #       input 3 to core C & D
+            reg_data_bit = 0
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 1
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 2
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        elif mode == 3:
+            # 2-channel mode
+            # 011 : input 0 to core C & D
+            #       input 3 to core A & B
+            reg_data_bit = 0
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 1
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 2
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        else:
+            # elif mode == 4:
+            # 4-channel mode
+            # 100 : input 0 to core A
+            #       input 1 to core B
+            #       input 2 to core C
+            #       input 3 to core D
+            reg_data_bit = 0
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 1
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 2
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+
+        self.spi_wr_fifo_aq600(reg_addr)
+        
+        ## Start spi write operation...
+        self.spi_start_pulse()
+
+
+    def ev12aq600_output_clk_en(self, clkout_en, sso_en, synco_en):
+        reg_addr = 0x008017
+
+        reg_data_bit = 0
+        if clkout_en == 0:
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        else:
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+
+        reg_data_bit = 1
+        if sso_en == 0:
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        else:
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+
+        reg_data_bit = 2
+        if synco_en == 0:
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        else:
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+
+        self.spi_wr_fifo_aq600(reg_addr)
+        
+        ## Start spi write operation...
+        self.spi_start_pulse()
+        
+    def ev12aq600_cal_set_en(self, cal_set_en):
+        reg_addr = 0x008009
+        if cal_set_en == 0:
+            reg_data_bit = 1
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 2
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        elif cal_set_en == 1:
+            reg_data_bit = 1
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 2
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+        elif cal_set_en == 2:
+            reg_data_bit = 1
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 2
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+        else:
+            reg_data_bit = 1
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+            reg_data_bit = 2
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+            
+        self.spi_wr_fifo_aq600(reg_addr)
+        ## Start spi write operation...
+        self.spi_start_pulse()
+        
+    def ev12aq600_ext_bw_disable(self, disable):
+        """
+        disable = 1: extended bandwidth (default)
+        disable = 0: nominal bandwidth
+        """
+        reg_addr = 0x008008
+        if disable == 1:
+            reg_data_bit = 0
+            self.set_aq600_bit(reg_addr, reg_data_bit)
+        else:
+            reg_data_bit = 0
+            self.unset_aq600_bit(reg_addr, reg_data_bit)
+            
+        self.spi_wr_fifo_aq600(reg_addr)
+        ## Start spi write operation...
+        self.spi_start_pulse()
 
     def ev12aq600_configuration_ramp_mode(self):
         reg_addr = 0x008B0A
@@ -851,6 +1105,65 @@ class ev12aq600:
         self.spi_wr_fifo_in(0x254000)
         self.spi_wr_fifo_in(0x240011)
         self.spi_wr_fifo_in(0x23021F)
+        self.spi_wr_fifo_in(0x22C3EA)
+        self.spi_wr_fifo_in(0x212A0A)
+        self.spi_wr_fifo_in(0x20210A)
+        self.spi_wr_fifo_in(0x1F0401)
+        self.spi_wr_fifo_in(0x1E0034)
+        self.spi_wr_fifo_in(0x1D0084)
+        self.spi_wr_fifo_in(0x1C2924)
+        self.spi_wr_fifo_in(0x190000)
+        self.spi_wr_fifo_in(0x180509)
+        self.spi_wr_fifo_in(0x178842)
+        self.spi_wr_fifo_in(0x162300)
+        self.spi_wr_fifo_in(0x14012C)
+        self.spi_wr_fifo_in(0x130965)
+        self.spi_wr_fifo_in(0x0E018C)
+        self.spi_wr_fifo_in(0x0D4000)
+        self.spi_wr_fifo_in(0x0C7001)
+        self.spi_wr_fifo_in(0x0B0018)
+        self.spi_wr_fifo_in(0x0A10D8)
+        self.spi_wr_fifo_in(0x090302)
+        self.spi_wr_fifo_in(0x081084)
+        self.spi_wr_fifo_in(0x0728B2)
+        self.spi_wr_fifo_in(0x041943)
+        self.spi_wr_fifo_in(0x020500)
+        self.spi_wr_fifo_in(0x010808)
+        self.spi_wr_fifo_in(0x00221C) 
+        # Start spi write operation...
+        self.spi_start_pulse()
+
+    ##################################################################################################################################### 
+    ## External PLL LMX2592
+    ##################################################################################################################################### 
+    def external_pll_config_4900(self):
+        """
+        Configure external PLL LMX2592 RFOUT A to generate a 4.9 GHz ADC Master CLK.
+        1- Preload all SPI commands in the SPI Master input FIFO.
+        2- Send all commands sending a spi_start pulse. 
+        """
+        self.spi_wr_fifo_in(0x00221E)
+        self.spi_wr_fifo_in(0x460000)
+        self.spi_wr_fifo_in(0x450000)
+        self.spi_wr_fifo_in(0x440089)
+        self.spi_wr_fifo_in(0x400077)
+        self.spi_wr_fifo_in(0x3E0000)
+        self.spi_wr_fifo_in(0x3D0001)
+        self.spi_wr_fifo_in(0x3B0000)
+        self.spi_wr_fifo_in(0x3003FC)
+        self.spi_wr_fifo_in(0x2F08CF)
+        self.spi_wr_fifo_in(0x2E0FA3)
+        self.spi_wr_fifo_in(0x2D01F4)
+        self.spi_wr_fifo_in(0x2C0000)
+        self.spi_wr_fifo_in(0x2B0000)
+        self.spi_wr_fifo_in(0x2A0000)
+        self.spi_wr_fifo_in(0x2903E8)
+        self.spi_wr_fifo_in(0x280000)
+        self.spi_wr_fifo_in(0x278204)
+        self.spi_wr_fifo_in(0x260030)
+        self.spi_wr_fifo_in(0x254000)
+        self.spi_wr_fifo_in(0x240011)
+        self.spi_wr_fifo_in(0x23021B)
         self.spi_wr_fifo_in(0x22C3EA)
         self.spi_wr_fifo_in(0x212A0A)
         self.spi_wr_fifo_in(0x20210A)

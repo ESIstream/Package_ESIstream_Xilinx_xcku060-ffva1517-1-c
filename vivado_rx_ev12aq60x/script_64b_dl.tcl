@@ -69,6 +69,7 @@ set ip_files [list \
      axi_uartlite_0\
      clk_wiz_0\
      add_u12\
+     ila_64b\
 		 ]
 
 if { [lindex $argv 0] == 0 | $argc != 1 } {
@@ -111,6 +112,7 @@ if { [lindex $argv 0] == 0 | $argc != 1 } {
     add_files $path_src_common/spi_refclk.vhd
     add_files $path_src_common/spi_dual_master_fsm.vhd
     add_files $path_src_common/spi_dual_master.vhd
+    add_files $path_src_common/ila_wrapper_64b.vhd
     add_files $path_src/../src_odelaye3/odelaye3_wrapper.vhd
     add_files $path_src_rx/
     add_files $path_src_rx_ip/rx_xcvr_wrapper_64b_dl.vhd

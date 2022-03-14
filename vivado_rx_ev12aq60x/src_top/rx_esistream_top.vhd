@@ -40,6 +40,7 @@ use UNISIM.VComponents.all;
 entity rx_esistream_top is
   generic(
     GEN_ESISTREAM          : boolean                       := true;
+    GEN_ILA                : boolean                       := true;
     GEN_GPIO               : boolean                       := false;
     NB_LANES               : integer                       := 8;
     RST_CNTR_INIT          : std_logic_vector(11 downto 0) := x"FFF";
@@ -462,7 +463,27 @@ begin
       be_status    => be_status,
       cb_status    => cb_status,
       valid_status => valid_status);
-
+  
+  ---------------------------------
+  -- Integrated Logic Analyzer:
+  ---------------------------------
+  g_ila : if GEN_ILA = true generate
+    ila_wrapper_1 : entity work.ila_wrapper
+      generic map (
+        NB_LANES => NB_LANES)
+      port map (
+        clk            => rx_clk,
+        rx_sync        => rx_sync_in,
+        data_out_12b_0 => data_out_12b(0),
+        data_out_12b_1 => data_out_12b(1),
+        data_out_12b_2 => data_out_12b(2),
+        data_out_12b_3 => data_out_12b(3),
+        data_out_12b_4 => data_out_12b(4),
+        data_out_12b_5 => data_out_12b(5),
+        data_out_12b_6 => data_out_12b(6),
+        data_out_12b_7 => data_out_12b(7));
+  end generate g_ila;
+  --
   --------------------------------------------------------------------------------------------
   -- SYNC generator and SYNC counter
   --------------------------------------------------------------------------------------------

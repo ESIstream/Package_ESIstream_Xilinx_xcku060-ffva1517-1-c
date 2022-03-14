@@ -42,6 +42,7 @@ end entity tb_rx_esistream_top;
 architecture behavioral of tb_rx_esistream_top is
 ---------------- Constants ----------------
   constant GEN_ESISTREAM       : boolean                               := true;
+  constant GEN_ILA             : boolean                               := false;
   constant GEN_GPIO            : boolean                               := true;
   constant NB_LANES            : natural                               := 8;
   constant COMMA               : std_logic_vector(31 downto 0)         := x"FF0000FF";
@@ -160,6 +161,7 @@ begin
   rx_esistream_top_1 : entity work.rx_esistream_top
     generic map (
       GEN_ESISTREAM          => GEN_ESISTREAM,
+      GEN_ILA                => GEN_ILA,
       GEN_GPIO               => GEN_GPIO,
       NB_LANES               => NB_LANES,
       RST_CNTR_INIT          => RST_CNTR_INIT,

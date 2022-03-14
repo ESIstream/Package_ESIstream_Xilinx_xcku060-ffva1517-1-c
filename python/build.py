@@ -64,14 +64,14 @@ package_reference = "xilinx_ku060"
 # ---------------------------------------------------------------------------------------------
 #
 # Valid implementation:
-hw_project_list = ["vivado_txrx_xm107", "vivado_rx_ev12aq60x"]
-implementation_list = [["script_16b_dl.tcl", 10, 0],
-                       ["script_32b_dl.tcl", 10, 10],
-                       ["script_64b_dl.tcl", 10, 10]]
+#hw_project_list = ["vivado_txrx_xm107", "vivado_rx_ev12aq60x"]
+#implementation_list = [["script_16b_dl.tcl", 10, 0],
+#                       ["script_32b_dl.tcl", 10, 10],
+#                       ["script_64b_dl.tcl", 10, 10]]
 #
-# hw_project_list = ["vivado_rx_ev12aq60x"]
-# implementation_list = [["script_32b_dl.tcl", 10, 0],
-#                        ["script_64b_dl.tcl", 10, 0]]
+hw_project_list = ["vivado_rx_ev12aq60x"]
+implementation_list = [["script_32b_dl.tcl", 10, 0],
+                       ["script_64b_dl.tcl", 10, 0]]
 
 tb_log_path = "C:\\vw\\" + package_reference + "\\tb_log.txt" 
 
