@@ -55,6 +55,7 @@ set path_src_rx_ip $path_src/../src_rx_ip
 set path_src_tx_rx_ip $path_src/../src_tx_rx_ip
 set path_src_tx $path_src/../src_tx
 set path_src_tx_emulator $path_src/../src_tx_emulator
+set path_src_tb $path_src/../src_tb
 set path_src_tb_top $path_src/src_tb_top
 set path_src_top $path_src/src_top
 set path_xdc $path_src/xdc
@@ -125,6 +126,8 @@ if { [lindex $argv 0] == 0 | $argc != 1 } {
     update_compile_order -fileset sources_1
      
     # Set simulation:
+    add_files -fileset $sim_name -norecurse $path_src_tb/spi_slave_regmap.vhd
+    add_files -fileset $sim_name -norecurse $path_src_tb/spi_slave_with_regmap.vhd
     add_files -fileset $sim_name -norecurse $path_src_tb_top/
     set_property top $sim_top [get_filesets $sim_name]
     set_property top_lib xil_defaultlib [get_filesets $sim_name]

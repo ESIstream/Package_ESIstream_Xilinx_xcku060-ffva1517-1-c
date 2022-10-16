@@ -41,11 +41,16 @@ end entity tb_rx_esistream_top;
 
 architecture behavioral of tb_rx_esistream_top is
 ---------------- Constants ----------------
+  -- To simulate ESIstream TX transmitter:
   constant GEN_ESISTREAM       : boolean                               := true;
+  -- To simulate EV12AQ600 SPI slave and UART communication between FPGA and PC: 
+  --constant GEN_ESISTREAM       : boolean                               := false;
   constant GEN_ILA             : boolean                               := false;
   constant GEN_GPIO            : boolean                               := true;
   constant NB_LANES            : natural                               := 8;
   constant COMMA               : std_logic_vector(31 downto 0)         := x"FF0000FF";
+  constant SPI_COMMAND_WR      : boolean                               := true;
+  --constant SPI_COMMAND_WR      : boolean                               := false;
   signal sso_p                 : std_logic                             := '0';
   signal sso_n                 : std_logic                             := '1';
   signal FABRIC_CLK_P          : std_logic                             := '0';
@@ -331,9 +336,9 @@ begin
       signal manual_mode  : out std_logic) is
     begin
       wait until rising_edge(clk);
-      sync        <= '1';
+      sync <= '1';
       wait until rising_edge(clk);
-      sync        <= '0';
+      sync <= '0';
       report "sync sent...";
       report "wait lanes_ready";
       wait until rising_edge(lanes_ready);
@@ -342,7 +347,7 @@ begin
       wait until rising_edge(valid_status);
       report "valid status...";
     end send_sync;
-    --
+  --
   begin
     -------------------------------- 
     -- tb start
@@ -416,23 +421,47 @@ begin
       axi4_lite_write(clk_100, ADDR_TX_FIFO, reg3, m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
       wait for 1 ms;
       wait until rising_edge(clk_100);
-      -- spi write fifo in 
-      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
-      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"04", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
-      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
-      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"55", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
-      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"AA", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
-      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"55", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
-      wait for 1 ms;
-      wait until rising_edge(clk_100);
-      -- spi write fifo in 
-      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
-      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"04", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
-      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
-      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"87", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
-      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"65", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
-      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"43", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+      if SPI_COMMAND_WR then
+        -- Data bit 15 must be set high to send a SPI write command to the ADC.
+        -- Write ADC EV12A600 register address 0x0001 (0x8001 for spi write) with data 0xCAFE
+        -- spi write fifo in 
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"04", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"80", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"01", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        wait for 1 ms;
+        wait until rising_edge(clk_100);
+        -- spi write fifo in 
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"04", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"CA", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"FE", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
       --
+      else  -- SPI COMMAND RD
+        -- Data bit 15 must be set low to send a SPI write command to the ADC.
+        -- Read ADC EV12A600 register address 0x0011
+        -- spi write fifo in 
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"04", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"11", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        wait for 1 ms;
+        wait until rising_edge(clk_100);
+        -- spi write fifo in 
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"04", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+        axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+      --
+      end if;
       reg3 <= reg3 or SPI_START_ENABLE;
       wait for 1 ms;
       wait until rising_edge(clk_100);
@@ -457,6 +486,9 @@ begin
     wait;
   end process;
 
+  ----------------------------------------------------------------------------------------------------
+  -- EV12AQ600 ADC ESIstream TX emulator:
+  ----------------------------------------------------------------------------------------------------
   gen_esistream_hdl : if GEN_ESISTREAM = true generate
     clk_bit <= not clk_bit after clk_bit_half_period;
 
@@ -480,8 +512,23 @@ begin
         txn         => txn,
         lss         => tx_lss);  -- when '1' lane synchronization sequence (FAS + PSS) sent on txp/n lanes else normal data.
   end generate gen_esistream_hdl;
-
+  ----------------------------------------------------------------------------------------------------
+  -- EV12AQ600 ADC SPI slave emulator
+  ----------------------------------------------------------------------------------------------------
+  spi_slave_with_regmap_1 : entity work.spi_slave_with_regmap
+    generic map (
+      SPI_ADDR_WIDTH => 16,
+      SPI_DATA_WIDTH => 16)
+    port map (
+      rst  => rst,
+      clk  => clk_100,
+      sclk => sclk,
+      csn  => csn,
+      mosi => mosi,
+      miso => miso);
+  ----------------------------------------------------------------------------------------------------
   -- Simulate PC:
+  ----------------------------------------------------------------------------------------------------
   rstn <= not rst;
   uart_wrapper_1 : entity work.uart_wrapper
     port map (
