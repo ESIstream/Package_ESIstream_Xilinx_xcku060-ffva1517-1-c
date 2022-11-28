@@ -136,6 +136,8 @@ architecture behavioral of tb_rx_esistream_top is
   signal m1_axi_busy           : std_logic                             := '0';
   signal s1_interrupt          : std_logic                             := '0';
   --
+  signal uart_rdata            : std_logic_vector(31 downto 0)         := (others => '0');
+  --
   signal reg3                  : std_logic_vector(7 downto 0)          := (others => '0');
   constant SPI_START_ENABLE    : std_logic_vector(7 downto 0)          := x"02";
   constant SPI_START_DISABLE   : std_logic_vector(7 downto 0)          := x"FD";
@@ -408,11 +410,11 @@ begin
       -------------------------------- 
       axi4_lite_write(clk_100, ADDR_CTRL, x"10", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);  -- s1 enable interrupt
       wait for 200 us;
-
+      
       -------------------------------- 
       -- UART WRITE command 
       --------------------------------
-      -- spi slave select command, external pll
+      -- spi slave select command, select ev12aq600 adc
       axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
       axi4_lite_write(clk_100, ADDR_TX_FIFO, x"03", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
       axi4_lite_write(clk_100, ADDR_TX_FIFO, x"00", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
@@ -474,13 +476,21 @@ begin
       axi4_lite_write(clk_100, ADDR_TX_FIFO, reg3, m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
       wait for 1 ms;
       wait until rising_edge(clk_100);
-    -- wait until rising_edge(s1_interrupt);                                                                     -- Wait TX FIFO empty
-    -- wait until rising_edge(s1_interrupt);                                                                     -- Wait ACK
-    -- axi4_lite_read(clk, ADDR_RX_FIFO, s1_rdata, m1_axi_addr, m1_axi_rdata, m1_axi_ren, m1_axi_busy);
-    -- -- axi4_lite_write(clk_100, ADDR_CTRL, x"10", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);  -- s1 enable interrupt
-    -- -- wait until rising_edge(s1_interrupt);                                                                     -- Wait TX FIFO empty
-    -- -- wait until rising_edge(s1_interrupt);                                                                     -- Wait ACK
-    -- -- axi4_lite_read(clk_100, ADDR_RX_FIFO, s1_rdata, m1_axi_addr, m1_axi_rdata, m1_axi_ren, m1_axi_busy);
+      -- Read register 10 of FPGA register map: 
+      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"80", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+      axi4_lite_write(clk_100, ADDR_TX_FIFO, x"0A", m1_axi_addr, m1_axi_strb, m1_axi_wdata, m1_axi_wen, m1_axi_busy);
+      wait for 1 ms;
+      wait until rising_edge(clk_100);
+      -- Unstack acknowlegment bytes, x"AC", of previous commands from UART and FPGA register map reg_10 value 
+      axi4_lite_read(clk_100, ADDR_RX_FIFO, uart_rdata, m1_axi_addr, m1_axi_rdata, m1_axi_ren, m1_axi_busy); -- x"AC" 
+      axi4_lite_read(clk_100, ADDR_RX_FIFO, uart_rdata, m1_axi_addr, m1_axi_rdata, m1_axi_ren, m1_axi_busy); -- x"AC"
+      axi4_lite_read(clk_100, ADDR_RX_FIFO, uart_rdata, m1_axi_addr, m1_axi_rdata, m1_axi_ren, m1_axi_busy); -- x"AC"
+      axi4_lite_read(clk_100, ADDR_RX_FIFO, uart_rdata, m1_axi_addr, m1_axi_rdata, m1_axi_ren, m1_axi_busy); -- x"AC"
+      axi4_lite_read(clk_100, ADDR_RX_FIFO, uart_rdata, m1_axi_addr, m1_axi_rdata, m1_axi_ren, m1_axi_busy); -- reg_10 MSByte
+      axi4_lite_read(clk_100, ADDR_RX_FIFO, uart_rdata, m1_axi_addr, m1_axi_rdata, m1_axi_ren, m1_axi_busy); -- reg_10 Byte
+      axi4_lite_read(clk_100, ADDR_RX_FIFO, uart_rdata, m1_axi_addr, m1_axi_rdata, m1_axi_ren, m1_axi_busy); -- reg_10 Byte
+      axi4_lite_read(clk_100, ADDR_RX_FIFO, uart_rdata, m1_axi_addr, m1_axi_rdata, m1_axi_ren, m1_axi_busy); -- reg_10 LSByte
+      axi4_lite_read(clk_100, ADDR_RX_FIFO, uart_rdata, m1_axi_addr, m1_axi_rdata, m1_axi_ren, m1_axi_busy); -- x"AC"
     end if;
     assert false report "Test finish" severity failure;
     wait;
