@@ -196,6 +196,6 @@ begin
   rx_usrclk    <= rx_usrclk_2(0);
   rx_frame_clk <= frame_clk;
   tx_usrclk    <= tx_usrclk_2(0);
-  tx_frame_clk <= frame_clk;
+  tx_frame_clk <= tx_usrclk_2(0);
   --
 end architecture rtl;
