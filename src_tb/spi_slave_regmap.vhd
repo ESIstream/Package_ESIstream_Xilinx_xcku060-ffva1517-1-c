@@ -59,11 +59,7 @@ architecture rtl of spi_slave_regmap is
   signal reg_0001_os     : std_logic                               := '0';
   -- Chip ID register: addr 0x0011
   signal reg_0011_m      : std_logic_vector(DATA_WIDTH-1 downto 0) := x"0914";
-  -- ADX4 license register: addr 0x0B1B 
-  -- -- bits 10 downto 3: license number 0x65
-  -- -- bit 2: license enable 0x1
-  -- -- bit 1 downto 0: info tester 0x3
-  signal reg_0B1B_m      : std_logic_vector(DATA_WIDTH-1 downto 0) := x"032F";
+  signal reg_0B1B_m      : std_logic_vector(DATA_WIDTH-1 downto 0) := x"0000";
 
 --
 begin
@@ -76,7 +72,7 @@ begin
         reg_0001_m  <= (others => '0');
         reg_0001_os <= '0';
         reg_0011_m  <= x"8915";
-        reg_0B1B_m  <= x"032F";
+        reg_0B1B_m  <= x"0000";
       elsif reg_addr(ADDR_WIDTH-1) = '1' and reg_wen = '1' then  -- write operation
         case ('0' & reg_addr(ADDR_WIDTH-2 downto 0)) is
           when reg_0000_addr => reg_0000_m <= reg_wdata;
